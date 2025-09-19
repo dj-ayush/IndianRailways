@@ -1,3 +1,4 @@
+/* src/index.css */
 @import "tailwindcss";
 
 @font-face {
@@ -9,6 +10,16 @@
     src: url(../public/fonts/Lausanne-500.woff2);
 }
 
+:root {
+  --primary: #0b1426;
+  --secondary: #1e3a8a;
+  --accent: #3b82f6;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --light: #f8fafc;
+  --dark: #0f172a;
+}
 
 .moveX{
     animation-name: moveAnimation;
@@ -33,4 +44,61 @@
     to{
         transform: translateX(-100%);
     }
+}
+
+/* Premium enhancements */
+.glass-effect {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.gradient-bg {
+  background: linear-gradient(135deg, #0b1426 0%, #1e293b 100%);
+}
+
+.premium-card {
+  @apply rounded-xl border border-gray-800 bg-gradient-to-br from-gray-900 to-gray-800 p-6 shadow-2xl;
+}
+
+.status-indicator {
+  @apply h-3 w-3 rounded-full;
+}
+
+.status-active {
+  @apply bg-green-500;
+}
+
+.status-warning {
+  @apply bg-yellow-500;
+}
+
+.status-critical {
+  @apply bg-red-500;
+}
+
+.ai-pulse {
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+}
+
+.track-line {
+  position: relative;
+}
+
+.track-line::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #3b82f6, transparent);
+  transform: translateY(-50%);
+  z-index: 0;
 }

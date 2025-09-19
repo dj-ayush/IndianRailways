@@ -1,3 +1,4 @@
+// src/App.jsx
 import { Route, Routes, useLocation } from 'react-router-dom'
 import Home from './pages/Home'
 import Agence from './pages/Agence'
@@ -6,7 +7,6 @@ import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import Navbar from './components/Navigation/Navbar'
 import FullScreenNav from './components/Navigation/FullScreenNav'
-
 
 const App = () => {
   const location = useLocation()
