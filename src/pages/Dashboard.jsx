@@ -1,5 +1,6 @@
 // Dashboard.jsx
-import React, { useMemo, useState } from 'react'
+import React, { useMemo, useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import DashboardHeader from '../components/dashboard/DashboardHeader'
 import NetworkMapCard from '../components/dashboard/NetworkMapCard'
 import TrainStatusCard from '../components/dashboard/TrainStatusCard'
@@ -7,6 +8,7 @@ import KPIStatsCard from '../components/dashboard/KPIStatsCard'
 import ManorStatusCard from '../components/dashboard/ManorStatusCard'
 import SuggestedActionsCard from '../components/dashboard/SuggestedActionsCard'
 import AIControlPanel from '../components/dashboard/AIControlPanel'
+import LoadingSpinner from '../components/common/LoadingSpinner'
 
 const StatCard = ({ title, value, trend, icon, color }) => {
   const colorClasses = {
@@ -38,6 +40,10 @@ const StatCard = ({ title, value, trend, icon, color }) => {
 
 const Dashboard = () => {
   const [active, setActive] = useState('overview')
+  const [userData, setUserData] = useState(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const navigate = useNavigate()
+  
   const menuItems = useMemo(() => ([
     { id: 'overview', label: 'AI Overview', icon: 'chart-network' },
     { id: 'tickets', label: 'Tickets', icon: 'ticket' },
@@ -46,6 +52,47 @@ const Dashboard = () => {
     { id: 'reports', label: 'Reports', icon: 'chart-bar' },
     { id: 'settings', label: 'Settings', icon: 'cog' },
   ]), [])
+
+  useEffect(() => {
+    // Load user data
+    const loadUserData = () => {
+      try {
+        const storedUserData = localStorage.getItem('ir_user_data')
+        const authEmail = localStorage.getItem('ir_auth_email')
+        
+        if (storedUserData && authEmail) {
+          const user = JSON.parse(storedUserData)
+          setUserData(user)
+        } else {
+          // If no valid user data, redirect to login
+          localStorage.removeItem('ir_auth_email')
+          localStorage.removeItem('ir_user_data')
+          navigate('/login')
+        }
+      } catch (error) {
+        console.error('Error loading user data:', error)
+        navigate('/login')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadUserData()
+  }, [navigate])
+
+  const handleLogout = () => {
+    localStorage.removeItem('ir_auth_email')
+    localStorage.removeItem('ir_user_data')
+    navigate('/login')
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <LoadingSpinner message="Loading dashboard..." />
+      </div>
+    )
+  }
 
   const NavLink = ({ id, children, icon }) => (
     <button
@@ -83,15 +130,19 @@ const Dashboard = () => {
                 <i className="fas fa-user"></i>
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-800">Admin User</p>
-                <p className="text-xs text-gray-500">System Administrator</p>
+                <p className="text-sm font-medium text-gray-800">
+                  {userData?.name || 'User'}
+                </p>
+                <p className="text-xs text-gray-500">
+                  {userData?.email || 'user@example.com'}
+                </p>
               </div>
             </div>
           </div>
         </aside>
 
         <main className='flex-1 h-screen overflow-y-auto bg-gray-50'>
-          <DashboardHeader onLogout={() => { localStorage.removeItem('ir_auth_email'); window.location.assign('/login') }} />
+          <DashboardHeader onLogout={handleLogout} />
 
           <div className='p-5 lg:p-8'>
             {active === 'overview' && (

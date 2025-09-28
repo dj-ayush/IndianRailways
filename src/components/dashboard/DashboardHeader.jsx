@@ -8,7 +8,7 @@ const DashboardHeader = ({ onLogout }) => {
         <div className='h-10 w-10 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold shadow-md'>
           IR
         </div>
-        <h1 className='font-bold text-xl lg:text-2xl text-gray-800'>AI-Powered Railway Traffic Control</h1>
+        <h1 className='font-bold text-xl lg:text-2xl text-gray-800'>AI Powered Railway Traffic Control</h1>
       </div>
       <button 
         onClick={onLogout} 
