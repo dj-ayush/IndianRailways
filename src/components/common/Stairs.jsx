@@ -11,6 +11,11 @@ const Stairs = (props) => {
     const pageRef = useRef(null)
 
     useGSAP(function () {
+        // Disable transition overlay for login and dashboard routes
+        if (currentPath === '/login' || currentPath === '/dashboard') {
+            return
+        }
+        
         const tl = gsap.timeline()
         tl.to(stairParentRef.current, {
             display: 'block',

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 
 const Login = () => {
   const [email, setEmail] = useState('')
@@ -9,6 +9,7 @@ const Login = () => {
   const [error, setError] = useState('')
   const [name, setName] = useState('')
   const navigate = useNavigate()
+  const location = useLocation()
 
   // Check if user is already logged in
   useEffect(() => {
@@ -17,6 +18,16 @@ const Login = () => {
       navigate('/dashboard')
     }
   }, [navigate])
+
+  // Open in sign-up mode if ?signup=1 present
+  useEffect(() => {
+    const params = new URLSearchParams(location.search)
+    if (params.get('signup') === '1') {
+      setIsSignUp(true)
+    } else {
+      setIsSignUp(false)
+    }
+  }, [location.search])
 
   const validateEmail = (email) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -30,7 +41,7 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
-    setLoading(true)
+    // No async delay or animations; proceed instantly
 
     // Basic validation
     if (!email || !password) {
@@ -58,9 +69,6 @@ const Login = () => {
     }
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
       if (isSignUp) {
         // Store user data for signup
         const userData = {
@@ -71,6 +79,8 @@ const Login = () => {
         localStorage.setItem('ir_user_data', JSON.stringify(userData))
         localStorage.setItem('ir_auth_email', email)
         setError('')
+        // notify app that auth changed
+        window.dispatchEvent(new Event('ir-auth-changed'))
         navigate('/dashboard')
       } else {
         // For login, check if user exists
@@ -80,6 +90,8 @@ const Login = () => {
           if (userData.email === email) {
             localStorage.setItem('ir_auth_email', email)
             setError('')
+            // notify app that auth changed
+            window.dispatchEvent(new Event('ir-auth-changed'))
             navigate('/dashboard')
           } else {
             setError('Invalid email or password')
@@ -90,25 +102,20 @@ const Login = () => {
       }
     } catch (err) {
       setError('An error occurred. Please try again.')
-    } finally {
-      setLoading(false)
     }
   }
 
   const handleSocialLogin = (provider) => {
-    setLoading(true)
-    // Simulate social login
-    setTimeout(() => {
-      const mockEmail = `user@${provider}.com`
-      localStorage.setItem('ir_auth_email', mockEmail)
-      localStorage.setItem('ir_user_data', JSON.stringify({
-        email: mockEmail,
-        name: `${provider} User`,
-        createdAt: new Date().toISOString()
-      }))
-      setLoading(false)
-      navigate('/dashboard')
-    }, 1000)
+    const mockEmail = `user@${provider}.com`
+    localStorage.setItem('ir_auth_email', mockEmail)
+    localStorage.setItem('ir_user_data', JSON.stringify({
+      email: mockEmail,
+      name: `${provider} User`,
+      createdAt: new Date().toISOString()
+    }))
+    // notify app that auth changed
+    window.dispatchEvent(new Event('ir-auth-changed'))
+    navigate('/dashboard')
   }
 
   return (
@@ -203,21 +210,9 @@ const Login = () => {
 
                 <button
                   type='submit'
-                  disabled={loading}
-                  className={`w-full py-3 rounded-md text-white font-medium transition-all ${
-                    loading 
-                      ? 'bg-gray-400 cursor-not-allowed' 
-                      : 'bg-blue-600 hover:bg-blue-700'
-                  }`}
+                  className='w-full py-3 rounded-md text-white font-medium bg-blue-600 hover:bg-blue-700 transition-all'
                 >
-                  {loading ? (
-                    <div className='flex items-center justify-center gap-2'>
-                      <div className='w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin'></div>
-                      {isSignUp ? 'Creating Account...' : 'Signing In...'}
-                    </div>
-                  ) : (
-                    isSignUp ? 'Create Account' : 'Sign In'
-                  )}
+                  {isSignUp ? 'Create Account' : 'Sign In'}
                 </button>
               </form>
 

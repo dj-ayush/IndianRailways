@@ -4,6 +4,11 @@ import { useState, useEffect } from 'react'
 import Home from './pages/Home'
 import Agence from './pages/Agence'
 import Projects from './pages/Projects'
+import Optimization from './pages/Optimization'
+import TrafficFlow from './pages/TrafficFlow'
+import Disruptions from './pages/Disruptions'
+import Energy from './pages/Energy'
+import Policy from './pages/Policy'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import Navbar from './components/Navigation/Navbar'
@@ -41,7 +46,22 @@ const App = () => {
       }
     }
 
+    // Initial check on mount
     checkAuth()
+
+    // Listen for auth changes (same-tab and cross-tab)
+    const handleAuthChanged = () => {
+      setIsLoading(true)
+      checkAuth()
+    }
+
+    window.addEventListener('ir-auth-changed', handleAuthChanged)
+    window.addEventListener('storage', handleAuthChanged)
+
+    return () => {
+      window.removeEventListener('ir-auth-changed', handleAuthChanged)
+      window.removeEventListener('storage', handleAuthChanged)
+    }
   }, [])
 
   // Protected Route Component
@@ -79,6 +99,11 @@ const App = () => {
           <Route path='/' element={<Home />} />
           <Route path='/agence' element={<Agence />} />
           <Route path='/projects' element={<Projects />} />
+          <Route path='/optimization' element={<Optimization />} />
+          <Route path='/traffic' element={<TrafficFlow />} />
+          <Route path='/disruptions' element={<Disruptions />} />
+          <Route path='/energy' element={<Energy />} />
+          <Route path='/policy' element={<Policy />} />
           <Route 
             path='/login' 
             element={

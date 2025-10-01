@@ -42,6 +42,15 @@ const Dashboard = () => {
   const [active, setActive] = useState('overview')
   const [userData, setUserData] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [modal, setModal] = useState(null) // { type: 'trains' | 'map' | 'schedule' }
+  const [tickets, setTickets] = useState([
+    { pnr: '123451', passenger: 'John Doe', train: 'Rajdhani 12951', date: '2025-10-01', status: 'Confirmed' }
+  ])
+  const [schedules, setSchedules] = useState([
+    { name: 'Rajdhani 12951', route: 'Delhi → Mumbai', dep: '10:00', arr: '18:30', status: 'On time' },
+    { name: 'Shatabdi 12001', route: 'Delhi → Bhopal', dep: '09:15', arr: '14:10', status: 'On time' },
+    { name: 'Duronto 12267', route: 'Mumbai → Ahmedabad', dep: '08:40', arr: '12:20', status: 'On time' }
+  ])
   const navigate = useNavigate()
   
   const menuItems = useMemo(() => ([
@@ -83,6 +92,8 @@ const Dashboard = () => {
   const handleLogout = () => {
     localStorage.removeItem('ir_auth_email')
     localStorage.removeItem('ir_user_data')
+    // notify app that auth changed
+    window.dispatchEvent(new Event('ir-auth-changed'))
     navigate('/login')
   }
 
@@ -168,19 +179,34 @@ const Dashboard = () => {
                           <span className="text-xs text-gray-600">Operational</span>
                         </div>
                       </div>
-                      <NetworkMapCard />
+                      <NetworkMapCard onExpand={() => setModal({ type: 'map' })} />
                     </div>
                   </div>
                   
                   <div className='space-y-6 lg:col-span-2'>
                     <div className='bg-white rounded-xl p-5 border border-gray-200 shadow-sm'>
                       <h3 className="font-bold text-lg text-gray-800 mb-4">Train Status</h3>
-                      <TrainStatusCard />
+                      <TrainStatusCard onViewAllTrains={() => setModal({ type: 'trains' })} />
                     </div>
                     
                     <div className='bg-white rounded-xl p-5 border border-gray-200 shadow-sm'>
                       <h3 className="font-bold text-lg text-gray-800 mb-4">AI Suggestions</h3>
-                      <SuggestedActionsCard />
+                      <SuggestedActionsCard 
+                        onAccept={() => {
+                          const toast = document.createElement('div')
+                          toast.textContent = 'Suggestion accepted'
+                          toast.className = 'fixed bottom-6 right-6 bg-green-600 text-white px-4 py-2 rounded shadow'
+                          document.body.appendChild(toast)
+                          setTimeout(() => toast.remove(), 2000)
+                        }}
+                        onReject={() => {
+                          const toast = document.createElement('div')
+                          toast.textContent = 'Suggestion rejected'
+                          toast.className = 'fixed bottom-6 right-6 bg-gray-700 text-white px-4 py-2 rounded shadow'
+                          document.body.appendChild(toast)
+                          setTimeout(() => toast.remove(), 2000)
+                        }}
+                      />
                     </div>
                   </div>
                 </div>
@@ -206,92 +232,172 @@ const Dashboard = () => {
 
             {active === 'tickets' && (
               <div className='bg-white rounded-xl p-5 border border-gray-200 shadow-sm'>
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="p-2 rounded-lg bg-blue-100 text-blue-600">
-                    <i className="fas fa-ticket-alt"></i>
-                  </div>
-                  <h3 className='font-bold text-lg text-gray-800'>Tickets Management</h3>
-                </div>
-                <p className='text-sm text-gray-600 mb-4'>Ticket management panel coming soon. Filter, export, and refund tickets.</p>
-                <div className="bg-gray-100 p-4 rounded-lg border border-gray-200">
-                  <div className="animate-pulse flex space-x-4">
-                    <div className="flex-1 space-y-4 py-1">
-                      <div className="h-4 bg-gray-300 rounded w-3/4"></div>
-                      <div className="space-y-2">
-                        <div className="h-4 bg-gray-300 rounded"></div>
-                        <div className="h-4 bg-gray-300 rounded w-5/6"></div>
-                      </div>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-blue-100 text-blue-600">
+                      <i className="fas fa-ticket-alt"></i>
                     </div>
+                    <h3 className='font-bold text-lg text-gray-800'>Tickets</h3>
                   </div>
+                  <div className='flex items-center gap-2'>
+                    <input className='px-3 py-2 border border-gray-300 rounded-lg text-sm' placeholder='Search PNR or passenger' />
+                    <button 
+                      onClick={() => {
+                        const newTicket = {
+                          pnr: String(100000 + Math.floor(Math.random() * 900000)),
+                          passenger: 'New Passenger',
+                          train: 'Express 10001',
+                          date: new Date().toISOString().slice(0,10),
+                          status: 'Confirmed'
+                        }
+                        setTickets(prev => [newTicket, ...prev])
+                      }}
+                      className='px-3 py-2 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700'
+                    >
+                      New Ticket
+                    </button>
+                  </div>
+                </div>
+                <div className='overflow-auto border border-gray-200 rounded-lg'>
+                  <table className='min-w-full text-sm'>
+                    <thead className='bg-gray-50'>
+                      <tr className='text-left text-gray-600'>
+                        <th className='px-4 py-2'>PNR</th>
+                        <th className='px-4 py-2'>Passenger</th>
+                        <th className='px-4 py-2'>Train</th>
+                        <th className='px-4 py-2'>Date</th>
+                        <th className='px-4 py-2'>Status</th>
+                        <th className='px-4 py-2'></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {tickets.map(t => (
+                        <tr key={t.pnr} className='border-t'>
+                          <td className='px-4 py-2'>{t.pnr}</td>
+                          <td className='px-4 py-2'>{t.passenger}</td>
+                          <td className='px-4 py-2'>{t.train}</td>
+                          <td className='px-4 py-2'>{t.date}</td>
+                          <td className='px-4 py-2'>
+                            <span className='px-2 py-1 rounded text-xs bg-green-100 text-green-700'>{t.status}</span>
+                          </td>
+                          <td className='px-4 py-2 text-right'>
+                            <button className='px-2 py-1 text-blue-600 hover:underline'>View</button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             )}
 
             {active === 'schedules' && (
               <div className='bg-white rounded-xl p-5 border border-gray-200 shadow-sm'>
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="p-2 rounded-lg bg-blue-100 text-blue-600">
-                    <i className="fas fa-calendar-alt"></i>
+                <div className="flex items-center justify-between mb-4">
+                  <div className='flex items-center gap-3'>
+                    <div className="p-2 rounded-lg bg-blue-100 text-blue-600">
+                      <i className="fas fa-calendar-alt"></i>
+                    </div>
+                    <h3 className='font-bold text-lg text-gray-800'>Schedules</h3>
                   </div>
-                  <h3 className='font-bold text-lg text-gray-800'>Schedules & Timetables</h3>
+                  <button onClick={() => setModal({ type: 'schedule' })} className='px-3 py-2 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700'>Add Schedule</button>
                 </div>
-                <p className='text-sm text-gray-600 mb-4'>View and edit timetables. Real-time adjustments reflected on passenger app.</p>
-                <div className="bg-gray-100 p-4 rounded-lg border border-gray-200">
-                  <div className="animate-pulse flex space-x-4">
-                    <div className="flex-1 space-y-4 py-1">
-                      <div className="h-4 bg-gray-300 rounded w-3/4"></div>
-                      <div className="space-y-2">
-                        <div className="h-4 bg-gray-300 rounded"></div>
-                        <div className="h-4 bg-gray-300 rounded w-5/6"></div>
+                <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+                  {["Rajdhani 12951","Shatabdi 12001","Duronto 12267"].map((name, idx) => (
+                    <div key={idx} className='border border-gray-200 rounded-lg p-4'>
+                      <div className='flex items-center justify-between'>
+                        <div>
+                          <p className='font-medium text-gray-800'>{name}</p>
+                          <p className='text-xs text-gray-500'>Delhi → Mumbai</p>
+                        </div>
+                        <span className='px-2 py-1 text-xs rounded bg-amber-100 text-amber-700'>On time</span>
+                      </div>
+                      <div className='mt-3 flex items-center gap-2 text-xs text-gray-600'>
+                        <span><i className='far fa-clock mr-1'></i>Dep 10:00</span>
+                        <span>•</span>
+                        <span><i className='far fa-clock mr-1'></i>Arr 18:30</span>
                       </div>
                     </div>
-                  </div>
+                  ))}
                 </div>
               </div>
             )}
 
             {active === 'passengers' && (
               <div className='bg-white rounded-xl p-5 border border-gray-200 shadow-sm'>
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="p-2 rounded-lg bg-blue-100 text-blue-600">
-                    <i className="fas fa-users"></i>
-                  </div>
-                  <h3 className='font-bold text-lg text-gray-800'>Passenger Management</h3>
-                </div>
-                <p className='text-sm text-gray-600 mb-4'>Search passengers, view histories, and handle KYC/verification.</p>
-                <div className="bg-gray-100 p-4 rounded-lg border border-gray-200">
-                  <div className="animate-pulse flex space-x-4">
-                    <div className="flex-1 space-y-4 py-1">
-                      <div className="h-4 bg-gray-300 rounded w-3/4"></div>
-                      <div className="space-y-2">
-                        <div className="h-4 bg-gray-300 rounded"></div>
-                        <div className="h-4 bg-gray-300 rounded w-5/6"></div>
-                      </div>
+                <div className="flex items-center justify-between mb-4">
+                  <div className='flex items-center gap-3'>
+                    <div className="p-2 rounded-lg bg-blue-100 text-blue-600">
+                      <i className="fas fa-users"></i>
                     </div>
+                    <h3 className='font-bold text-lg text-gray-800'>Passengers</h3>
                   </div>
+                  <input className='px-3 py-2 border border-gray-300 rounded-lg text-sm' placeholder='Search by name or email' />
                 </div>
+                <ul className='divide-y border border-gray-200 rounded-lg'>
+                  {[{name:'John Doe',email:'john@example.com'},{name:'Anita Singh',email:'anita@example.com'},{name:'Rahul Verma',email:'rahul@example.com'}].map((p, idx) => (
+                    <li key={idx} className='flex items-center justify-between px-4 py-3'>
+                      <div>
+                        <p className='text-sm font-medium text-gray-800'>{p.name}</p>
+                        <p className='text-xs text-gray-500'>{p.email}</p>
+                      </div>
+                      <div className='flex items-center gap-2'>
+                        <button className='px-2 py-1 text-blue-600 hover:underline text-sm'>View</button>
+                        <button className='px-2 py-1 text-gray-600 hover:underline text-sm'>History</button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
               </div>
             )}
 
             {active === 'reports' && (
               <div className='bg-white rounded-xl p-5 border border-gray-200 shadow-sm'>
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="p-2 rounded-lg bg-blue-100 text-blue-600">
-                    <i className="fas fa-chart-bar"></i>
+                <div className="flex items-center justify-between mb-4">
+                  <div className='flex items-center gap-3'>
+                    <div className="p-2 rounded-lg bg-blue-100 text-blue-600">
+                      <i className="fas fa-chart-bar"></i>
+                    </div>
+                    <h3 className='font-bold text-lg text-gray-800'>Reports</h3>
                   </div>
-                  <h3 className='font-bold text-lg text-gray-800'>Analytics & Reports</h3>
+                  <button
+                    onClick={() => {
+                      const rows = [
+                        ['Metric','Value','Trend'],
+                        ['Ridership','1.2M','+4.2%'],
+                        ['Revenue','₹42.5Cr','+2.1%'],
+                        ['Punctuality','91%','+1.3%']
+                      ]
+                      const csv = rows.map(r => r.map(v => '"' + String(v).replaceAll('"','""') + '"').join(',')).join('\n')
+                      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+                      const url = URL.createObjectURL(blob)
+                      const a = document.createElement('a')
+                      a.href = url
+                      a.download = 'reports.csv'
+                      document.body.appendChild(a)
+                      a.click()
+                      a.remove()
+                      URL.revokeObjectURL(url)
+                    }}
+                    className='px-3 py-2 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700'
+                  >
+                    Export CSV
+                  </button>
                 </div>
-                <p className='text-sm text-gray-600 mb-4'>Generate monthly ridership, revenue, and punctuality reports.</p>
-                <div className="bg-gray-100 p-4 rounded-lg border border-gray-200">
-                  <div className="animate-pulse flex space-x-4">
-                    <div className="flex-1 space-y-4 py-1">
-                      <div className="h-4 bg-gray-300 rounded w-3/4"></div>
-                      <div className="space-y-2">
-                        <div className="h-4 bg-gray-300 rounded"></div>
-                        <div className="h-4 bg-gray-300 rounded w-5/6"></div>
+                <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+                  {[
+                    {title:'Ridership', value:'1.2M', trend:'+4.2%'},
+                    {title:'Revenue', value:'₹42.5Cr', trend:'+2.1%'},
+                    {title:'Punctuality', value:'91%', trend:'+1.3%'}
+                  ].map((r, idx) => (
+                    <div key={idx} className='border border-gray-200 rounded-lg p-4'>
+                      <p className='text-xs text-gray-500 uppercase tracking-wider'>{r.title}</p>
+                      <div className='mt-2 flex items-end gap-2'>
+                        <span className='text-2xl font-bold text-gray-800'>{r.value}</span>
+                        <span className='text-xs text-green-600'>{r.trend}</span>
                       </div>
                     </div>
-                  </div>
+                  ))}
                 </div>
               </div>
             )}
@@ -304,7 +410,17 @@ const Dashboard = () => {
                   </div>
                   <h3 className='font-bold text-lg text-gray-800'>System Settings</h3>
                 </div>
-                <form className='grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm'>
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault()
+                    const toast = document.createElement('div')
+                    toast.textContent = 'Settings saved'
+                    toast.className = 'fixed bottom-6 right-6 bg-green-600 text-white px-4 py-2 rounded shadow'
+                    document.body.appendChild(toast)
+                    setTimeout(() => toast.remove(), 2000)
+                  }}
+                  className='grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm'
+                >
                   <label className='flex flex-col gap-1'>
                     <span className='text-gray-600 text-xs uppercase tracking-wider font-medium'>Organization name</span>
                     <input 
@@ -341,7 +457,7 @@ const Dashboard = () => {
                     <span className='text-gray-600'>Enable automatic throughput optimization</span>
                   </label>
                   <div className='sm:col-span-2'>
-                    <button className='mt-2 rounded-lg bg-blue-600 text-white px-4 py-2.5 hover:bg-blue-700 transition-colors font-medium shadow-sm hover:shadow-md'>
+                    <button type='submit' className='mt-2 rounded-lg bg-blue-600 text-white px-4 py-2.5 hover:bg-blue-700 transition-colors font-medium shadow-sm hover:shadow-md'>
                       Save changes
                     </button>
                   </div>
@@ -351,6 +467,77 @@ const Dashboard = () => {
           </div>
         </main>
       </div>
+      {modal && (
+        <div className='fixed inset-0 bg-black/50 flex items-center justify-center z-50'>
+          <div className='bg-white rounded-xl shadow-xl border border-gray-200 w-[90vw] max-w-3xl max-h-[85vh] overflow-auto'>
+            <div className='flex items-center justify-between px-5 py-3 border-b'>
+              <h4 className='font-bold text-gray-800'>
+                {modal.type === 'trains' && 'All Trains'}
+                {modal.type === 'map' && 'Expanded Map'}
+                {modal.type === 'schedule' && 'Add Schedule'}
+              </h4>
+              <button onClick={() => setModal(null)} className='text-gray-600 hover:text-gray-900'>
+                <i className='fas fa-times'></i>
+              </button>
+            </div>
+            <div className='p-5'>
+              {modal.type === 'trains' && (
+                <ul className='divide-y'>
+                  {['T1 Mumbai → Delhi','T2 Chennai → Kolkata','T3 Bangalore → Hyderabad','T4 Ahmedabad → Pune'].map((t, i) => (
+                    <li key={i} className='py-3 text-sm text-gray-700'>{t}</li>
+                  ))}
+                </ul>
+              )}
+              {modal.type === 'map' && (
+                <div className='rounded-lg overflow-hidden'>
+                  <video src='/video2.mp4' autoPlay loop muted playsInline className='w-full h-[60vh] object-cover' />
+                </div>
+              )}
+              {modal.type === 'schedule' && (
+                <form
+                  className='grid grid-cols-1 sm:grid-cols-2 gap-4'
+                  onSubmit={(e) => {
+                    e.preventDefault()
+                    const form = e.currentTarget
+                    const name = form.trainName.value.trim()
+                    const route = form.route.value.trim()
+                    const dep = form.dep.value.trim()
+                    const arr = form.arr.value.trim()
+                    if (!name || !route || !dep || !arr) return
+                    setSchedules(prev => [{ name, route, dep, arr, status: 'On time' }, ...prev])
+                    setModal(null)
+                    const toast = document.createElement('div')
+                    toast.textContent = 'Schedule added'
+                    toast.className = 'fixed bottom-6 right-6 bg-blue-600 text-white px-4 py-2 rounded shadow'
+                    document.body.appendChild(toast)
+                    setTimeout(() => toast.remove(), 2000)
+                  }}
+                >
+                  <label className='flex flex-col text-sm'>
+                    <span className='text-gray-600 mb-1'>Train name/number</span>
+                    <input name='trainName' className='px-3 py-2 border border-gray-300 rounded-lg' placeholder='e.g., Rajdhani 12951' />
+                  </label>
+                  <label className='flex flex-col text-sm'>
+                    <span className='text-gray-600 mb-1'>Route</span>
+                    <input name='route' className='px-3 py-2 border border-gray-300 rounded-lg' placeholder='e.g., Delhi → Mumbai' />
+                  </label>
+                  <label className='flex flex-col text-sm'>
+                    <span className='text-gray-600 mb-1'>Departure</span>
+                    <input name='dep' className='px-3 py-2 border border-gray-300 rounded-lg' placeholder='HH:MM' />
+                  </label>
+                  <label className='flex flex-col text-sm'>
+                    <span className='text-gray-600 mb-1'>Arrival</span>
+                    <input name='arr' className='px-3 py-2 border border-gray-300 rounded-lg' placeholder='HH:MM' />
+                  </label>
+                  <div className='sm:col-span-2'>
+                    <button type='submit' className='mt-2 rounded-lg bg-blue-600 text-white px-4 py-2.5 hover:bg-blue-700'>Save</button>
+                  </div>
+                </form>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

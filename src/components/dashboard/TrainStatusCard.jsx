@@ -13,7 +13,7 @@ const statusDot = (status) => {
   return 'bg-red-500'
 }
 
-const TrainStatusCard = () => {
+const TrainStatusCard = ({ onViewAllTrains = () => {} }) => {
   const trains = [
     { id: 'T1', status: 'On Time', route: 'Mumbai → Delhi' },
     { id: 'T2', status: 'Delayed', route: 'Chennai → Kolkata' },
@@ -43,7 +43,7 @@ const TrainStatusCard = () => {
         ))}
       </ul>
       <div className='px-6 py-3 bg-blue-50 border-t border-blue-100'>
-        <button className='text-xs text-blue-600 font-medium hover:text-blue-800 transition-colors'>
+        <button onClick={onViewAllTrains} className='text-xs text-blue-600 font-medium hover:text-blue-800 transition-colors'>
           View All Trains →
         </button>
       </div>

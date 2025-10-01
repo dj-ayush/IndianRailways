@@ -1,7 +1,7 @@
 // NetworkMapCard.jsx
 import React from 'react';
 
-const NetworkMapCard = () => {
+const NetworkMapCard = ({ onExpand = () => {} }) => {
   return (
     <div className='bg-white rounded-2xl border border-blue-100 shadow-lg overflow-hidden'>
       <div className='px-6 py-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-blue-100'>
@@ -21,7 +21,7 @@ const NetworkMapCard = () => {
         </div>
         <div className='mt-4 flex justify-between items-center'>
           <div className='text-sm text-gray-600'>Live tracking of all trains in the network</div>
-          <button className='px-3 py-1.5 text-xs bg-blue-100 text-blue-700 rounded-lg font-medium hover:bg-blue-200 transition-colors'>
+          <button onClick={onExpand} className='px-3 py-1.5 text-xs bg-blue-100 text-blue-700 rounded-lg font-medium hover:bg-blue-200 transition-colors'>
             Expand View
           </button>
         </div>
